@@ -12,12 +12,17 @@ class Kohana_Pagination {
 
 	// Merged configuration settings
 	protected $config = array(
-		'current_page'      => array('source' => 'query_string', 'key' => 'page'),
-		'total_items'       => 0,
-		'items_per_page'    => 10,
-		'view'              => 'pagination/basic',
-		'auto_hide'         => TRUE,
-		'first_page_in_url' => FALSE,
+		'current_page'          => array('source' => 'query_string', 'key' => 'page'),
+		'total_items'           => 0,
+		'items_per_page'        => 10,
+		'view'                  => 'pagination/basic',
+		'auto_hide'             => TRUE,
+		'first_page_in_url'     => FALSE,
+		'count_page_show_all'   => 8,
+		'count_page_start'      => 2,
+		'count_page_end'        => 2,
+		'count_start_end_pages' => 1,
+		'count_page_padding'    => 4,
 	);
 
 	// Current page number
@@ -52,6 +57,12 @@ class Kohana_Pagination {
 
 	// Query offset
 	protected $offset;
+
+    protected $count_page_show_all;
+    protected $count_page_start;
+    protected $count_page_end;
+    protected $count_page_padding;
+    protected $count_start_end_pages;
 
 	/**
 	 * Creates a new Pagination object.
@@ -159,18 +170,23 @@ class Kohana_Pagination {
 			}
 
 			// Calculate and clean all pagination variables
-			$this->total_items        = (int) max(0, $this->config['total_items']);
-			$this->items_per_page     = (int) max(1, $this->config['items_per_page']);
-			$this->total_pages        = (int) ceil($this->total_items / $this->items_per_page);
-			$this->current_page       = (int) min(max(1, $this->current_page), max(1, $this->total_pages));
-			$this->current_first_item = (int) min((($this->current_page - 1) * $this->items_per_page) + 1, $this->total_items);
-			$this->current_last_item  = (int) min($this->current_first_item + $this->items_per_page - 1, $this->total_items);
-			$this->previous_page      = ($this->current_page > 1) ? $this->current_page - 1 : FALSE;
-			$this->next_page          = ($this->current_page < $this->total_pages) ? $this->current_page + 1 : FALSE;
-			$this->first_page         = ($this->current_page === 1) ? FALSE : 1;
-			$this->last_page          = ($this->current_page >= $this->total_pages) ? FALSE : $this->total_pages;
-			$this->offset             = (int) (($this->current_page - 1) * $this->items_per_page);
-		}
+			$this->total_items           = (int) max(0, $this->config['total_items']);
+			$this->items_per_page        = (int) max(1, $this->config['items_per_page']);
+			$this->total_pages           = (int) ceil($this->total_items / $this->items_per_page);
+			$this->current_page          = (int) min(max(1, $this->current_page), max(1, $this->total_pages));
+			$this->current_first_item    = (int) min((($this->current_page - 1) * $this->items_per_page) + 1, $this->total_items);
+			$this->current_last_item     = (int) min($this->current_first_item + $this->items_per_page - 1, $this->total_items);
+			$this->previous_page         = ($this->current_page > 1) ? $this->current_page - 1 : FALSE;
+			$this->next_page             = ($this->current_page < $this->total_pages) ? $this->current_page + 1 : FALSE;
+			$this->first_page            = ($this->current_page === 1) ? FALSE : 1;
+			$this->last_page             = ($this->current_page >= $this->total_pages) ? FALSE : $this->total_pages;
+			$this->offset                = (int) (($this->current_page - 1) * $this->items_per_page);
+			$this->count_page_show_all   = (int) $this->config['count_page_show_all'];
+			$this->count_page_start      = (int) $this->config['count_page_start'];
+			$this->count_page_end        = (int) $this->config['count_page_end'];
+			$this->count_start_end_pages = (int) $this->config['count_start_end_pages'];
+			$this->count_page_padding    = (int) $this->config['count_page_padding'];
+        }
 
 		// Chainable method
 		return $this;
@@ -196,7 +212,7 @@ class Kohana_Pagination {
 		switch ($this->config['current_page']['source'])
 		{
 			case 'query_string':
-				return URL::site(Request::current()->uri).URL::query(array($this->config['current_page']['key'] => $page));
+				return URL::site(Request::current()->uri()).URL::query(array($this->config['current_page']['key'] => $page));
 
 			case 'route':
 				return URL::site(Request::current()->uri(array($this->config['current_page']['key'] => $page))).URL::query();
@@ -220,6 +236,25 @@ class Kohana_Pagination {
 
 		return $page > 0 AND $page <= $this->total_pages;
 	}
+
+	/**
+	 * Checks whether the page link for a given page in the set of pages should be shown. 
+	 *
+	 * @param   integer  page number
+	 * @return  boolean
+	 */
+    public function show_page_link($page_number)
+    {
+        if($this->total_pages <= $this->count_page_show_all)
+            return true;
+        elseif($page_number == $this->current_page)
+            return true;
+        elseif($page_number <= $this->count_page_start || $page_number > $this->total_pages - $this->count_page_start)
+            return true;
+        elseif($page_number < $this->current_page + $this->count_page_padding && $page_number > $this->current_page - $this->count_page_padding)
+            return true;
+        return false;
+    }
 
 	/**
 	 * Renders the pagination links.
