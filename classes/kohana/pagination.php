@@ -172,7 +172,7 @@ class Kohana_Pagination {
 			// Calculate and clean all pagination variables
 			$this->total_items           = (int) max(0, $this->config['total_items']);
 			$this->items_per_page        = (int) max(1, $this->config['items_per_page']);
-			$this->total_pages           = (int) ceil($this->total_items / $this->items_per_page);
+			$this->total_pages           = (int) floor($this->total_items / $this->items_per_page);
 			$this->current_page          = (int) min(max(1, $this->current_page), max(1, $this->total_pages));
 			$this->current_first_item    = (int) min((($this->current_page - 1) * $this->items_per_page) + 1, $this->total_items);
 			$this->current_last_item     = (int) min($this->current_first_item + $this->items_per_page - 1, $this->total_items);
